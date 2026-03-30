@@ -1,4 +1,43 @@
-from markdown_it.token import Token
+from html.parser import HTMLParser
+from logging import debug
+
+from tokenizer import Token
+
+config = {
+    "statement": {
+        "html-tag-name": "statement",
+        "params": ["s"],
+        "self-closing": False
+    },
+    "constraint": {
+        "html-tag-name": "constraint",
+        "params": ["c"],
+        "self-closing": True
+    },
+    "probability": {
+        "html-tag-name": "probability",
+        "params": ["p"],
+        "self-closing": False
+    }
+}
+
+
+class InlineHTMLParser(HTMLParser):
+    """Pomocniczy parser do wyciąganania tagów i ich atrybutów z html_inline"""
+
+    def __init__(self):
+        super().__init__()
+        self.extracted_tag = None
+        self.extracted_attrs = {}
+        self.is_closing = False
+
+    def handle_starttag(self, tag, attrs):
+        self.extracted_tag = tag
+        self.extracted_attrs = dict(attrs)
+
+    def handle_endtag(self, tag):
+        self.extracted_tag = tag
+        self.is_closing = True
 
 
 class TokenParser:
@@ -15,13 +54,9 @@ class TokenParser:
         :param tokens: list of Token objects
         :return: None
         """
-        for token in tokens:
-            print(f"Token type: {token.type}, content: {token.content}")
-            self._parse(token)
 
-            if token.children is not None:
-                for child in token.children:
-                    self._parse(child)
+        for token in tokens:
+            self._parse(token)
 
     def _parse(self, token: Token) -> None:
         """
@@ -29,4 +64,5 @@ class TokenParser:
         :param token: a Token object
         :return: None
         """
-        print(f"Parsing token of type: {token.type}, content: {token.content}")
+
+        debug(token)

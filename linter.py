@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from logging import basicConfig
 
 from token_parser import TokenParser
-from tokenizer import Tokenizer
+from tokenizer import tokenize
 
 basicConfig(level="DEBUG", format="%(asctime)s - %(levelname)s - %(message)s")
 logging.getLogger("markdown_it").setLevel(logging.WARNING)
@@ -15,7 +15,6 @@ arg_parser.add_argument("-f", "--file", dest="file_path",
 args = arg_parser.parse_args()
 
 if __name__ == "__main__":
-    tokenizer = Tokenizer()
-    tokens = tokenizer.tokenize(args.file_path)
+    tokens = tokenize(args.file_path)
     parser = TokenParser()
     parser.parse(tokens)
