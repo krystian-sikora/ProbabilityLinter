@@ -2,7 +2,7 @@ import logging
 from argparse import ArgumentParser
 from logging import basicConfig
 
-from src.token_parser import TokenParser
+from src.token_parser import lint
 from src.tokenizer import tokenize
 
 basicConfig(level="DEBUG", format="%(asctime)s - %(levelname)s - %(message)s")
@@ -16,5 +16,6 @@ args = arg_parser.parse_args()
 
 if __name__ == "__main__":
     tokens = tokenize(args.file_path)
-    parser = TokenParser()
-    parser.parse(tokens)
+    errors = lint(tokens)
+    for error in errors:
+        logging.error(error)

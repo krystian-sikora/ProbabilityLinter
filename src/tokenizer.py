@@ -20,6 +20,8 @@ class Token:
     attrs: dict[str, Any]
     content: str
     line: int
+    col: int
+    offset: int
 
 
 def tokenize(file_path: str) -> list[Token]:
@@ -35,7 +37,9 @@ def tokenize(file_path: str) -> list[Token]:
         source = file.read()
 
     for match in TAG_RE.finditer(source):
-        line = source[:match.start()].count('\n') + 1
+        offset = match.start()
+        line = source[:offset].count('\n') + 1
+        col = offset - source.rfind('\n', 0, offset)
         attrs = {
             m.group('key'): m.group('value')
             for m in ATTR_RE.finditer(match.group('attrs'))
@@ -45,5 +49,7 @@ def tokenize(file_path: str) -> list[Token]:
             attrs=attrs,
             content=match.group('content').strip(),
             line=line,
+            col=col,
+            offset=offset
         ))
     return tokens
