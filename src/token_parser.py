@@ -1,7 +1,7 @@
 from html.parser import HTMLParser
 from logging import debug
 
-from tokenizer import Token
+from src.tokenizer import Token
 
 config = {
     "statement": {
