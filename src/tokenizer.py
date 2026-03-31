@@ -24,17 +24,14 @@ class Token:
     offset: int
 
 
-def tokenize(file_path: str) -> list[Token]:
+def tokenize(source: str) -> list[Token]:
     """
     Method to tokenize the text of the Markdown file.
-    :param file_path: path to the Markdown file to be tokenized.
+    :param source: Markdown file content to be tokenized.
     :return: list of Token objects
     """
 
     tokens = []
-
-    with open(file_path, "r", encoding="utf-8") as file:
-        source = file.read()
 
     for match in TAG_RE.finditer(source):
         offset = match.start()
