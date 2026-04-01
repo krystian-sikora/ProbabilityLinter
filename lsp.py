@@ -66,5 +66,9 @@ def did_change(ls: ProbLinterServer, params):
         )
 
 
-if __name__ == "__main__":
+def start_server():
     server.start_io()
+
+
+if __name__ == "__main__":
+    start_server()
