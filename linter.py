@@ -44,6 +44,16 @@ def to_gcc(path: str, err: List[LintError]) -> List[str]:
     return [f"{path}:{e.line}:{e.col}: error: {e.message}" for e in err]
 
 
+def lint_source(source: str, path: str = "<string>") -> list[str]:
+    """
+    Lints a raw source string and returns GCC-formatted error strings.
+    Useful for testing and for CLI file mode.
+    """
+    tokens = tokenize(source)
+    errors = lint(tokens)
+    return to_gcc(path, errors)
+
+
 if __name__ == "__main__":
     args = parse_args()
 
@@ -54,9 +64,7 @@ if __name__ == "__main__":
         lsp.start_server()
     else:
         source = open(args.file_path).read()
-        tokens = tokenize(source)
-        errors = lint(tokens)
-        gcc_errors = to_gcc(args.file_path, errors)
+        gcc_errors = lint_source(source, args.file_path)
 
         for gcc_error in gcc_errors:
             print(gcc_error)
