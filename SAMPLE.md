@@ -11,5 +11,3 @@ ew. <constraint c='~(~d & m)'/>
 
 <probability p='0.001'>The probability of two dead infants is 0.1%</probability>
 
-
-
