@@ -1,8 +1,10 @@
 from lsprotocol import types
 from lsprotocol.types import (
-    TEXT_DOCUMENT_DID_OPEN, TEXT_DOCUMENT_DID_CHANGE,
+    TEXT_DOCUMENT_DID_OPEN, TEXT_DOCUMENT_DID_CHANGE, TEXT_DOCUMENT_HOVER,
     Diagnostic, DiagnosticSeverity, Position, Range,
     DidOpenTextDocumentParams,
+    Hover, HoverParams,
+    MarkupContent, MarkupKind,
 )
 from pygls.lsp.server import LanguageServer
 from pygls.workspace import TextDocument
@@ -33,7 +35,7 @@ class ProbLinterServer(LanguageServer):
             diagnostics.append(Diagnostic(
                 range=Range(
                     start=Position(line=error.line - 1, character=error.col - 1),
-                    end=Position(line=error.line - 1, character=error.col - 1 + error.offset),
+                    end=Position(line=error.line - 1, character=error.col - 1),
                 ),
                 message=error.message,
                 severity=severity,
@@ -73,6 +75,42 @@ def did_change(ls: ProbLinterServer, params):
                 diagnostics=diagnostics,
             )
         )
+
+
+@server.feature(TEXT_DOCUMENT_HOVER)
+def hover(ls: ProbLinterServer, params: HoverParams):
+    """
+    Return diagnostic messages for the current line as hover text.
+    This enables `vim.lsp.buf.hover()` in Neovim to show linter errors.
+    """
+    document = ls.workspace.get_text_document(params.text_document.uri)
+
+    # Ensure diagnostics are computed (e.g. if hover fires before didOpen)
+    if document.uri not in ls.diagnostics:
+        ls.make_diagnostics(document)
+
+    _, diagnostics = ls.diagnostics.get(document.uri, (None, []))
+
+    # Match diagnostics that span the cursor line
+    line = params.position.line
+    matching = [
+        d for d in diagnostics
+        if d.range.start.line <= line <= d.range.end.line
+    ]
+
+    if not matching:
+        return None
+
+    lines = [f"**{d.severity.name}**: {d.message}" for d in matching]
+    contents = MarkupContent(kind=MarkupKind.Markdown, value="\n\n".join(lines))
+
+    return Hover(
+        contents=contents,
+        range=Range(
+            start=Position(line=line, character=0),
+            end=Position(line=line, character=999),
+        ),
+    )
 
 
 def start_server():

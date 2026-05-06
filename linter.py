@@ -1,6 +1,6 @@
 import logging
 from argparse import ArgumentParser, Namespace
-from logging import basicConfig
+from logging import basicConfig, debug
 from typing import List
 
 import lsp
@@ -63,6 +63,7 @@ if __name__ == "__main__":
         basicConfig(level="DEBUG", format=log_format)
 
     if args.lsp:
+        debug("Starting in LSP mode")
         lsp.start_server()
     else:
         source = open(args.file_path).read()
