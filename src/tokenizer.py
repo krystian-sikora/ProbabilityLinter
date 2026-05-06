@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-KNOWN_TAGS = {"statement", "constraint", "probability"}
+KNOWN_TAGS = {"statement", "constraint", "probability", "query"}
 
 TAG_RE = re.compile(
     r'<(?P<tag>' + '|'.join(KNOWN_TAGS) + r')'  # opening tag name

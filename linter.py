@@ -5,6 +5,7 @@ from typing import List
 
 import lsp
 from src.token_parser import lint, LintError
+from src.semantic_parser import lint_semantic
 from src.tokenizer import tokenize
 
 logging.getLogger("markdown_it").setLevel(logging.WARNING)
@@ -41,7 +42,7 @@ def to_gcc(path: str, err: List[LintError]) -> List[str]:
     :param err: the array of LintErrors
     :return: array of GCC formatted strings
     """
-    return [f"{path}:{e.line}:{e.col}: error: {e.message}" for e in err]
+    return [f"{path}:{e.line}:{e.col}: {e.severity}: {e.message}" for e in err]
 
 
 def lint_source(source: str, path: str = "<string>") -> list[str]:
@@ -51,6 +52,7 @@ def lint_source(source: str, path: str = "<string>") -> list[str]:
     """
     tokens = tokenize(source)
     errors = lint(tokens)
+    errors.extend(lint_semantic(tokens))
     return to_gcc(path, errors)
 
 

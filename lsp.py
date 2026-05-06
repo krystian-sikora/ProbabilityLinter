@@ -8,6 +8,7 @@ from pygls.lsp.server import LanguageServer
 from pygls.workspace import TextDocument
 
 from src.token_parser import lint
+from src.semantic_parser import lint_semantic
 from src.tokenizer import tokenize
 
 
@@ -18,18 +19,26 @@ class ProbLinterServer(LanguageServer):
 
     def make_diagnostics(self, document: TextDocument) -> None:
         diagnostics = []
+        tokens = tokenize(document.source)
 
-        for token in tokenize(document.source):
-            for error in lint([token]):
-                diagnostics.append(Diagnostic(
-                    range=Range(
-                        start=Position(line=error.line - 1, character=error.col - 1),
-                        end=Position(line=error.line - 1, character=error.col - 1 + error.offset),
-                    ),
-                    message=error.message,
-                    severity=DiagnosticSeverity.Error,
-                    source="prob-linter",
-                ))
+        all_errors = lint(tokens)
+        all_errors.extend(lint_semantic(tokens))
+
+        for error in all_errors:
+            severity = {
+                "error": DiagnosticSeverity.Error,
+                "warning": DiagnosticSeverity.Warning,
+                "info": DiagnosticSeverity.Information,
+            }.get(error.severity, DiagnosticSeverity.Error)
+            diagnostics.append(Diagnostic(
+                range=Range(
+                    start=Position(line=error.line - 1, character=error.col - 1),
+                    end=Position(line=error.line - 1, character=error.col - 1 + error.offset),
+                ),
+                message=error.message,
+                severity=severity,
+                source="prob-linter",
+            ))
 
         self.diagnostics[document.uri] = (document.version, diagnostics)
 

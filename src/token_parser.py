@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from src.tokenizer import Token
 
@@ -9,11 +9,13 @@ class LintError:
     line: int
     col: int
     offset: int
+    severity: str = "error"   # "error" | "warning" | "info"
 
 REQUIRED_ATTRS: dict[str, set[str]] = {
     "statement": {"s"},
     "constraint": {"c"},
-    "probability": {"p"},
+    "probability": {"t", "p"},
+    "query": {"t"},
 }
 
 def lint(tokens: list[Token]) -> list[LintError]:
