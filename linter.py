@@ -4,7 +4,7 @@ from logging import basicConfig, debug
 from typing import List
 
 import lsp
-from src.token_parser import lint, LintError
+from src.token_parser import lint, lint_unclosed_tags, LintError
 from src.semantic_parser import lint_semantic
 from src.tokenizer import tokenize
 
@@ -51,7 +51,8 @@ def lint_source(source: str, path: str = "<string>") -> list[str]:
     Useful for testing and for CLI file mode.
     """
     tokens = tokenize(source)
-    errors = lint(tokens)
+    errors = lint_unclosed_tags(source)
+    errors.extend(lint(tokens))
     errors.extend(lint_semantic(tokens))
     return to_gcc(path, errors)
 

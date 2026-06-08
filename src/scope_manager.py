@@ -8,6 +8,7 @@ Contract:
 """
 from dataclasses import dataclass
 
+from src.token_parser import attr_str
 from src.tokenizer import Token
 
 LINTER_CONTENT_TAGS = frozenset({"symbol", "constraint", "prob", "query"})
@@ -51,7 +52,7 @@ def build_blocks(tokens: list[Token]) -> list[ProbabilityBlock]:
     """
     markers = sorted(
         (
-            (token.offset, _assign_block_id(token.attrs.get("id", "").strip() or None, i + 1), token)
+            (token.offset, _assign_block_id(attr_str(token.attrs, "id") or None, i + 1), token)
             for i, token in enumerate(tokens)
             if token.tag == "block"
         ),

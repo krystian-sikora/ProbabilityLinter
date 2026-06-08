@@ -2,7 +2,7 @@
 Semantic parser: converts linted tokens into probability blocks,
 wires them to PiterInterface, and returns diagnostics.
 """
-from src.token_parser import LintError
+from src.token_parser import LintError, attr_str
 from src.tokenizer import Token
 from src.scope_manager import ProbabilityBlock, build_blocks
 from src.PiterInterface import (
@@ -23,7 +23,7 @@ def _make_error(token: Token, message: str, severity: str = "error") -> LintErro
 
 
 def _given(attrs: dict, default: str = "True") -> str:
-    return attrs.get("given", default).strip() or default
+    return attr_str(attrs, "given", default) or default
 
 
 def validate_block(block: ProbabilityBlock) -> list[LintError]:
@@ -35,15 +35,15 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
     prefix = f"block '{block.block_id}': " if block.block_id != "default" else ""
 
     symbols = [
-        token.attrs.get("name", "").strip()
+        name
         for token in block.symbols
-        if token.attrs.get("name", "").strip()
+        if (name := attr_str(token.attrs, "name"))
     ]
     if symbols:
         pi.set_symbols(symbols)
 
     for token in block.constraints:
-        expr = token.attrs.get("expr", "").strip()
+        expr = attr_str(token.attrs, "expr")
         if not expr:
             continue
         try:
@@ -52,8 +52,8 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
             errors.append(_make_error(token, prefix + str(e)))
 
     for token in block.probabilities:
-        target = token.attrs.get("target", "").strip()
-        value_raw = token.attrs.get("value", "").strip()
+        target = attr_str(token.attrs, "target")
+        value_raw = attr_str(token.attrs, "value")
         given = _given(token.attrs)
         if not target or not value_raw:
             continue
@@ -75,7 +75,7 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
                 errors.append(_make_error(anchor, prefix + str(e)))
 
     for token in block.queries:
-        target = token.attrs.get("target", "").strip()
+        target = attr_str(token.attrs, "target")
         given = _given(token.attrs)
         if not target or not pi.is_solved:
             continue

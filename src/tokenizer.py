@@ -37,7 +37,7 @@ def tokenize(source: str) -> list[Token]:
         line = source[:offset].count('\n') + 1
         col = offset - source.rfind('\n', 0, offset)
         attrs = {
-            m.group('key'): m.group('value')
+            m.group('key'): (m.group('value') or '')
             for m in ATTR_RE.finditer(match.group('attrs'))
         }
         content = match.group('content')

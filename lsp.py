@@ -9,7 +9,7 @@ from lsprotocol.types import (
 from pygls.lsp.server import LanguageServer
 from pygls.workspace import TextDocument
 
-from src.token_parser import lint
+from src.token_parser import lint, lint_unclosed_tags
 from src.semantic_parser import lint_semantic
 from src.tokenizer import tokenize
 
@@ -23,7 +23,8 @@ class ProbLinterServer(LanguageServer):
         diagnostics = []
         tokens = tokenize(document.source)
 
-        all_errors = lint(tokens)
+        all_errors = lint_unclosed_tags(document.source)
+        all_errors.extend(lint(tokens))
         all_errors.extend(lint_semantic(tokens))
 
         for error in all_errors:

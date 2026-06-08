@@ -105,6 +105,38 @@ class TestMissingAttributes(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("self-closing", errors[0].message)
 
+    def test_incomplete_attribute_does_not_crash(self):
+        """Partial tags while typing (e.g. <prob value=/>) must not raise AttributeError."""
+        source = "<prob value=/>"
+        gcc = lint_source(source)
+        messages = " ".join(gcc)
+        self.assertIn("Missing required attribute 'target'", messages)
+        self.assertIn("Missing required attribute 'value'", messages)
+
+    def test_unclosed_constraint_emits_warning(self):
+        source = (
+            "<block id='test' />\n"
+            "<prob target='a' value='0.5' />\n"
+            "<constraint expr='~(a & m)'>\n"
+            "<query target='a' given='m' />"
+        )
+        gcc = lint_source(source)
+        warnings = [line for line in gcc if ": warning:" in line]
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("Unclosed <constraint>", warnings[0])
+
+    def test_closed_symbol_no_unclosed_warning(self):
+        source = "<symbol name='d'>Two infants are dead.</symbol>"
+        gcc = lint_source(source)
+        warnings = [line for line in gcc if ": warning:" in line]
+        self.assertEqual(len(warnings), 0)
+
+    def test_self_closing_constraint_no_unclosed_warning(self):
+        source = "<constraint expr='~(a & m)' />"
+        gcc = lint_source(source)
+        warnings = [line for line in gcc if ": warning:" in line]
+        self.assertEqual(len(warnings), 0)
+
 
 class TestBlockScoping(unittest.TestCase):
     """Tests for <block /> probability block boundaries."""
