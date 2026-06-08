@@ -1,14 +1,25 @@
-# Sample Markdown file.
+# Sample Markdown file — Sally Clark case
 
-<statement s='d'>Two infants are dead.</statement>
+This file demonstrates the linter tag syntax. Lint with:
 
-Evaluating if the <statement s='m'>mother is a murderer.</statement>
+```bash
+python linter.py -f SAMPLE.md
+```
 
-<constraint c='~(~d & m)'>If the two infants are not dead, the mother is not a murderer.</constraint>
-ew. <constraint c='~(~d & m)'/>
+Expected output:
 
-<probability t='m' p='0.0001'>The probability of mother being the murderer is 0.01%.</probability>
+```
+SAMPLE.md:25:1: info: P(~m | d) = 0.900000
+```
 
-<probability t='d' p='0.001'>The probability of two dead infants is 0.1%</probability>
+<symbol name="d">Two infants are dead.</symbol>
 
-<query t='m' c='d'>What is P(m | d)?</query>
+Evaluating if the <symbol name="m">mother is a murderer</symbol>.
+
+<constraint expr="~(~d & m)" />
+
+<prob target="m" value="0.0001" />
+
+<prob target="d" value="0.001" />
+
+<query target="~m" given="d" />

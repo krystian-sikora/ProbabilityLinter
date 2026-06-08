@@ -2,13 +2,13 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-KNOWN_TAGS = {"statement", "constraint", "probability", "query"}
+KNOWN_TAGS = {"prob", "constraint", "query", "symbol"}
 
 TAG_RE = re.compile(
-    r'<(?P<tag>' + '|'.join(KNOWN_TAGS) + r')'  # opening tag name
-    r'(?P<attrs>[^>]*)'                         # raw attributes
-    r'>(?P<content>.*?)</(?P=tag)>',            # content + matching close tag
-    re.DOTALL
+    r'<(?P<tag>' + '|'.join(KNOWN_TAGS) + r')'
+    r'(?P<attrs>[^>]*)'
+    r'(?:>(?P<content>.*?)</(?P=tag)>|\s*/>)',
+    re.DOTALL,
 )
 
 ATTR_RE = re.compile(r'(?P<key>[\w-]+)(?:=(?P<quote>["\'])(?P<value>.*?)(?P=quote))?')
@@ -22,15 +22,14 @@ class Token:
     line: int
     col: int
     offset: int
+    self_closing: bool = False
 
 
 def tokenize(source: str) -> list[Token]:
     """
-    Method to tokenize the text of the Markdown file.
-    :param source: Markdown file content to be tokenized.
-    :return: list of Token objects
+    Extract prob-linter tags from Markdown source.
+    Supports paired tags and self-closing tags (e.g. <prob target="m" value="0.5" />).
     """
-
     tokens = []
 
     for match in TAG_RE.finditer(source):
@@ -41,12 +40,14 @@ def tokenize(source: str) -> list[Token]:
             m.group('key'): m.group('value')
             for m in ATTR_RE.finditer(match.group('attrs'))
         }
+        content = match.group('content')
         tokens.append(Token(
             tag=match.group('tag'),
             attrs=attrs,
-            content=match.group('content').strip(),
+            content=content.strip() if content else '',
             line=line,
             col=col,
-            offset=offset
+            offset=offset,
+            self_closing=content is None,
         ))
     return tokens

@@ -238,7 +238,7 @@ class PiterInterface:
             if extra:
                 raise SymbolError(
                     f"Query {name} introduces unknown symbol(s) {extra!r}. "
-                    f"They must be declared in a <statement> or used in a <probability> / <constraint> before finalizing."
+                    f"They must be declared in a <symbol> or used in a <prob> / <constraint> before finalizing."
                 )
 
         num_mask, dem_mask = self.piter.getNumDem(target, condition)

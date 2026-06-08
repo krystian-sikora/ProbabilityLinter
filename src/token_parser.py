@@ -1,6 +1,8 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from src.tokenizer import Token
+
+# todo: nie można dodać zerwego lub pewnego prawdopodobieństwa - tworzy to problemy matematyczne
 
 @dataclass
 class LintError:
@@ -12,11 +14,12 @@ class LintError:
     severity: str = "error"   # "error" | "warning" | "info"
 
 REQUIRED_ATTRS: dict[str, set[str]] = {
-    "statement": {"s"},
-    "constraint": {"c"},
-    "probability": {"t", "p"},
-    "query": {"t"},
+    "symbol": {"name"},
+    "constraint": {"expr"},
+    "prob": {"target", "value"},
+    "query": {"target"},
 }
+
 
 def lint(tokens: list[Token]) -> list[LintError]:
     errors = []
@@ -29,16 +32,15 @@ def check_required_attrs(token: Token) -> list[LintError]:
     errors = []
 
     for attr in REQUIRED_ATTRS.get(token.tag, set()):
-        if attr in token.attrs:
-            if token.attrs[attr]:
-                continue
+        if attr in token.attrs and token.attrs[attr]:
+            continue
 
         errors.append(LintError(
-            line = token.line,
-            col = token.col,
-            offset = token.offset,
-            tag = token.tag,
-            message=f"Missing required attribute '{attr}'"),
-        )
+            line=token.line,
+            col=token.col,
+            offset=token.offset,
+            tag=token.tag,
+            message=f"Missing required attribute '{attr}'",
+        ))
 
     return errors

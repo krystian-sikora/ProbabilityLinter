@@ -9,12 +9,6 @@ from src.tokenizer import Token
 from src.PiterInterface import (
     PiterInterface,
     PiterInterfaceError,
-    SymbolError,
-    ProbabilityValueError,
-    InconsistentSystemError,
-    UnderdeterminedSystemError,
-    InvalidSolutionError,
-    ImpossibleConditionError,
 )
 
 
@@ -24,8 +18,8 @@ class ProbabilityBlock:
     tokens: list[Token]
 
     @property
-    def statements(self) -> list[Token]:
-        return [t for t in self.tokens if t.tag == "statement"]
+    def symbols(self) -> list[Token]:
+        return [t for t in self.tokens if t.tag == "symbol"]
 
     @property
     def constraints(self) -> list[Token]:
@@ -33,7 +27,7 @@ class ProbabilityBlock:
 
     @property
     def probabilities(self) -> list[Token]:
-        return [t for t in self.tokens if t.tag == "probability"]
+        return [t for t in self.tokens if t.tag == "prob"]
 
     @property
     def queries(self) -> list[Token]:
@@ -59,6 +53,10 @@ def _make_error(token: Token, message: str, severity: str = "error") -> LintErro
     )
 
 
+def _given(attrs: dict, default: str = "True") -> str:
+    return attrs.get("given", default).strip() or default
+
+
 def validate_block(block: ProbabilityBlock) -> list[LintError]:
     """
     Feed a probability block through PiterInterface and collect diagnostics.
@@ -66,45 +64,38 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
     errors: list[LintError] = []
     pi = PiterInterface()
 
-    # Register symbols from statements
-    symbols = []
-    for token in block.statements:
-        s = token.attrs.get("s", "").strip()
-        if s:
-            symbols.append(s)
+    symbols = [
+        token.attrs.get("name", "").strip()
+        for token in block.symbols
+        if token.attrs.get("name", "").strip()
+    ]
     if symbols:
         pi.set_symbols(symbols)
 
-    # Add constraints
     for token in block.constraints:
-        c = token.attrs.get("c", "").strip()
-        if not c:
+        expr = token.attrs.get("expr", "").strip()
+        if not expr:
             continue
         try:
-            pi.add_constraint(c)
+            pi.add_constraint(expr)
         except PiterInterfaceError as e:
             errors.append(_make_error(token, str(e)))
 
-    # Add probabilities
     for token in block.probabilities:
-        t = token.attrs.get("t", "").strip()
-        c = token.attrs.get("c", "True").strip() or "True"
-        p_raw = token.attrs.get("p", "").strip()
-        if not t or not p_raw:
-            continue  # syntactic errors already caught by token_parser
+        target = token.attrs.get("target", "").strip()
+        value_raw = token.attrs.get("value", "").strip()
+        given = _given(token.attrs)
+        if not target or not value_raw:
+            continue
         try:
-            p = float(p_raw)
-            pi.add_probability(t, c, p)
+            pi.add_probability(target, given, float(value_raw))
         except PiterInterfaceError as e:
             errors.append(_make_error(token, str(e)))
 
-    # Solve the system (triggered by queries, or by the presence of probabilities)
-    if block.probabilities or block.queries:
+    if pi.piter is not None and (block.probabilities or block.queries):
         try:
             pi.solve()
         except PiterInterfaceError as e:
-            # Attach to the first token that contributed to the block
-            # (or the first token overall if none)
             anchor = block.probabilities[0] if block.probabilities else (
                 block.constraints[0] if block.constraints else (
                     block.tokens[0] if block.tokens else None
@@ -113,17 +104,16 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
             if anchor:
                 errors.append(_make_error(anchor, str(e)))
 
-    # Execute queries
     for token in block.queries:
-        t = token.attrs.get("t", "").strip()
-        c = token.attrs.get("c", "True").strip() or "True"
-        if not t:
+        target = token.attrs.get("target", "").strip()
+        given = _given(token.attrs)
+        if not target or not pi.is_solved:
             continue
         try:
-            result = pi.query(t, c)
+            result = pi.query(target, given)
             errors.append(_make_error(
                 token,
-                f"P({t} | {c}) = {result:.6f}",
+                f"P({target} | {given}) = {result:.6f}",
                 severity="info",
             ))
         except PiterInterfaceError as e:
