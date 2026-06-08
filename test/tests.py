@@ -2,6 +2,7 @@ import unittest
 
 from src.token_parser import lint, LintError
 from src.tokenizer import tokenize
+from src.scope_manager import build_blocks
 from linter import lint_source
 
 
@@ -92,6 +93,72 @@ class TestMissingAttributes(unittest.TestCase):
         source = "<query target='m' given='d' />"
         errors = lint(tokenize(source))
         self.assertEqual(len(errors), 0)
+
+    def test_block_self_closing_no_error(self):
+        source = "<block id='case-a' />"
+        errors = lint(tokenize(source))
+        self.assertEqual(len(errors), 0)
+
+    def test_block_must_be_self_closing(self):
+        source = "<block></block>"
+        errors = lint(tokenize(source))
+        self.assertEqual(len(errors), 1)
+        self.assertIn("self-closing", errors[0].message)
+
+
+class TestBlockScoping(unittest.TestCase):
+    """Tests for <block /> probability block boundaries."""
+
+    def test_no_block_tag_is_single_default_block(self):
+        source = (
+            "<prob target='d' value='0.5' />\n"
+            "<query target='d' />"
+        )
+        blocks = build_blocks(tokenize(source))
+        self.assertEqual(len(blocks), 1)
+        self.assertEqual(blocks[0].block_id, "default")
+        self.assertEqual(len(blocks[0].probabilities), 1)
+
+    def test_block_anchor_splits_into_two_blocks(self):
+        source = (
+            "<block id='a' />\n"
+            "<prob target='d' value='0.1' />\n"
+            "<block id='b' />\n"
+            "<prob target='d' value='0.2' />\n"
+        )
+        blocks = build_blocks(tokenize(source))
+        self.assertEqual(len(blocks), 2)
+        self.assertEqual(blocks[0].block_id, "a")
+        self.assertEqual(blocks[1].block_id, "b")
+        self.assertEqual(len(blocks[0].probabilities), 1)
+        self.assertEqual(len(blocks[1].probabilities), 1)
+
+    def test_tags_before_first_block_go_to_default(self):
+        source = (
+            "<prob target='d' value='0.5' />\n"
+            "<block id='second' />\n"
+            "<prob target='d' value='0.5' />\n"
+        )
+        blocks = build_blocks(tokenize(source))
+        self.assertEqual(len(blocks), 2)
+        self.assertEqual(blocks[0].block_id, "default")
+        self.assertEqual(blocks[1].block_id, "second")
+
+    def test_contradiction_is_scoped_to_one_block(self):
+        source = (
+            "<block id='ok' />\n"
+            "<prob target='d' value='0.1' />\n"
+            "<query target='d' />\n"
+            "<block id='bad' />\n"
+            "<prob target='d' value='0.2' />\n"
+            "<prob target='d' value='0.3' />\n"
+        )
+        gcc = lint_source(source)
+        info_lines = [line for line in gcc if ": info:" in line]
+        error_lines = [line for line in gcc if ": error:" in line]
+        self.assertEqual(len(info_lines), 1)
+        self.assertIn("block 'ok'", info_lines[0])
+        self.assertTrue(any("block 'bad'" in line and "contradictory" in line.lower() for line in error_lines))
 
 
 class TestSemanticLinting(unittest.TestCase):

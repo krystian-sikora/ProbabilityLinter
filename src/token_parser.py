@@ -25,7 +25,21 @@ def lint(tokens: list[Token]) -> list[LintError]:
     errors = []
     for token in tokens:
         errors.extend(check_required_attrs(token))
+        errors.extend(check_block_tag(token))
     return errors
+
+
+def check_block_tag(token: Token) -> list[LintError]:
+    if token.tag != "block" or token.self_closing:
+        return []
+
+    return [LintError(
+        line=token.line,
+        col=token.col,
+        offset=token.offset,
+        tag=token.tag,
+        message="Block tag must be self-closing: <block /> or <block id=\"name\" />",
+    )]
 
 
 def check_required_attrs(token: Token) -> list[LintError]:

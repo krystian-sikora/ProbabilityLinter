@@ -2,44 +2,13 @@
 Semantic parser: converts linted tokens into probability blocks,
 wires them to PiterInterface, and returns diagnostics.
 """
-from dataclasses import dataclass
-
 from src.token_parser import LintError
 from src.tokenizer import Token
+from src.scope_manager import ProbabilityBlock, build_blocks
 from src.PiterInterface import (
     PiterInterface,
     PiterInterfaceError,
 )
-
-
-@dataclass
-class ProbabilityBlock:
-    """A group of related tags that form one probability system."""
-    tokens: list[Token]
-
-    @property
-    def symbols(self) -> list[Token]:
-        return [t for t in self.tokens if t.tag == "symbol"]
-
-    @property
-    def constraints(self) -> list[Token]:
-        return [t for t in self.tokens if t.tag == "constraint"]
-
-    @property
-    def probabilities(self) -> list[Token]:
-        return [t for t in self.tokens if t.tag == "prob"]
-
-    @property
-    def queries(self) -> list[Token]:
-        return [t for t in self.tokens if t.tag == "query"]
-
-
-def build_blocks(tokens: list[Token]) -> list[ProbabilityBlock]:
-    """
-    Currently the whole document is one block.
-    Future: split by blank lines, headers, or explicit delimiters.
-    """
-    return [ProbabilityBlock(tokens=tokens)]
 
 
 def _make_error(token: Token, message: str, severity: str = "error") -> LintError:
@@ -63,6 +32,7 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
     """
     errors: list[LintError] = []
     pi = PiterInterface()
+    prefix = f"block '{block.block_id}': " if block.block_id != "default" else ""
 
     symbols = [
         token.attrs.get("name", "").strip()
@@ -79,7 +49,7 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
         try:
             pi.add_constraint(expr)
         except PiterInterfaceError as e:
-            errors.append(_make_error(token, str(e)))
+            errors.append(_make_error(token, prefix + str(e)))
 
     for token in block.probabilities:
         target = token.attrs.get("target", "").strip()
@@ -90,7 +60,7 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
         try:
             pi.add_probability(target, given, float(value_raw))
         except PiterInterfaceError as e:
-            errors.append(_make_error(token, str(e)))
+            errors.append(_make_error(token, prefix + str(e)))
 
     if pi.piter is not None and (block.probabilities or block.queries):
         try:
@@ -102,7 +72,7 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
                 )
             )
             if anchor:
-                errors.append(_make_error(anchor, str(e)))
+                errors.append(_make_error(anchor, prefix + str(e)))
 
     for token in block.queries:
         target = token.attrs.get("target", "").strip()
@@ -113,11 +83,11 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
             result = pi.query(target, given)
             errors.append(_make_error(
                 token,
-                f"P({target} | {given}) = {result:.6f}",
+                prefix + f"P({target} | {given}) = {result:.6f}",
                 severity="info",
             ))
         except PiterInterfaceError as e:
-            errors.append(_make_error(token, str(e)))
+            errors.append(_make_error(token, prefix + str(e)))
 
     return errors
 

@@ -16,13 +16,14 @@ Results are available in two modes:
 
 ## Markdown syntax
 
-The linter recognizes four custom tags. Logic expressions use [SymPy](https://www.sympy.org/) syntax (e.g. `~`, `&`, `|`). Tags use **readable attribute names**; `<prob>` and `<query>` are typically **self-closing**.
+The linter recognizes five custom tags. Logic expressions use [SymPy](https://www.sympy.org/) syntax (e.g. `~`, `&`, `|`). Formal tags are **self-closing**; only `<symbol>` has a visible prose body.
 
 | Tag | Required | Optional | Purpose |
 |-----|----------|----------|---------|
+| `<block>` | — | `id` | Starts a new probability system. Must be self-closing. Tags before the first `<block />` share one implicit `default` block. |
 | `<symbol>` | `name` | — | Optional documentation for a logical symbol. Body is human-readable prose. |
-| `<constraint>` | `expr` | — | Logical constraint (SymPy). Self-closing, e.g. `<constraint expr="~(~d & m)" />`. |
-| `<prob>` | `target`, `value` | `given` (default `True`) | Declare `P(target \| given) = value`. Usually self-closing. |
+| `<constraint>` | `expr` | — | Logical constraint (SymPy), e.g. `<constraint expr="~(~d & m)" />`. |
+| `<prob>` | `target`, `value` | `given` (default `True`) | Declare `P(target \| given) = value`. |
 | `<query>` | `target` | `given` (default `True`) | Compute `P(target \| given)`; emits an `info` diagnostic after solving. |
 
 ### Example
@@ -30,6 +31,8 @@ The linter recognizes four custom tags. Logic expressions use [SymPy](https://ww
 See `SAMPLE.md` for a full [Sally Clark case](https://en.wikipedia.org/wiki/Sally_Clark) example. Minimal document:
 
 ```markdown
+<block id="sally-clark" />
+
 <symbol name="d">Two infants are dead.</symbol>
 <symbol name="m">The mother is a murderer.</symbol>
 
@@ -44,7 +47,7 @@ See `SAMPLE.md` for a full [Sally Clark case](https://en.wikipedia.org/wiki/Sall
 Running `python linter.py -f SAMPLE.md` outputs an `info` diagnostic with the computed query:
 
 ```
-SAMPLE.md:25:1: info: P(~m | d) = 0.900000
+SAMPLE.md:27:1: info: block 'sally-clark': P(~m | d) = 0.900000
 ```
 
 Syntax problems use `error` severity; successfully computed queries use `info`. A file with a missing attribute might report:
@@ -110,7 +113,8 @@ Hover over a line with diagnostics to see messages in editors that support `text
 | `lsp.py` | LSP server using `pygls`. Publishes diagnostics on `didOpen` / `didChange`. |
 | `src/tokenizer.py` | Regex-based tokenizer for `<symbol>`, `<constraint>`, `<prob>`, and `<query>` (paired and self-closing). |
 | `src/token_parser.py` | Syntactic validation of required attributes. |
-| `src/semantic_parser.py` | Builds `ProbabilityBlock` objects, calls `PiterInterface`, emits semantic and query diagnostics. |
+| `src/scope_manager.py` | Splits tokens into `ProbabilityBlock` groups using `<block />` anchors. |
+| `src/semantic_parser.py` | Validates each block via `PiterInterface`, emits semantic and query diagnostics. |
 | `src/PiterInterface.py` | Bridge to the ProbabilityIter engine. Parses SymPy logic, solves `Ax = b`, answers queries. |
 
 Pipeline:

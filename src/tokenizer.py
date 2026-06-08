@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-KNOWN_TAGS = {"prob", "constraint", "query", "symbol"}
+KNOWN_TAGS = {"block", "prob", "constraint", "query", "symbol"}
 
 TAG_RE = re.compile(
     r'<(?P<tag>' + '|'.join(KNOWN_TAGS) + r')'
