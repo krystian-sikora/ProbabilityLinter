@@ -14,6 +14,27 @@ from src.semantic_parser import lint_semantic
 from src.tokenizer import scan
 
 
+def _offset_to_position(source: str, offset: int) -> Position:
+    """Convert a 0-based source index to an LSP Position (0-based line/character)."""
+    line = source.count("\n", 0, offset)
+    last_nl = source.rfind("\n", 0, offset)
+    character = offset - last_nl - 1 if last_nl >= 0 else offset
+    return Position(line=line, character=character)
+
+
+def _diagnostic_range(source: str, error) -> Range:
+    """Span the full tag when end_offset is known; otherwise point at line/col."""
+    if error.end_offset is not None and error.end_offset > error.offset:
+        return Range(
+            start=_offset_to_position(source, error.offset),
+            end=_offset_to_position(source, error.end_offset),
+        )
+    return Range(
+        start=Position(line=error.line - 1, character=error.col - 1),
+        end=Position(line=error.line - 1, character=error.col - 1),
+    )
+
+
 class ProbLinterServer(LanguageServer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -34,10 +55,7 @@ class ProbLinterServer(LanguageServer):
                 "info": DiagnosticSeverity.Information,
             }.get(error.severity, DiagnosticSeverity.Error)
             diagnostics.append(Diagnostic(
-                range=Range(
-                    start=Position(line=error.line - 1, character=error.col - 1),
-                    end=Position(line=error.line - 1, character=error.col - 1),
-                ),
+                range=_diagnostic_range(document.source, error),
                 message=error.message,
                 severity=severity,
                 source="prob-linter",

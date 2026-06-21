@@ -128,6 +128,7 @@ class _Scanner:
                 tag, start, start_line, start_col,
                 f"Unclosed <{tag}> tag: use '<{tag} ... />' or add '</{tag}>'",
                 "warning",
+                end_offset=content_start,
             ))
             return
 
@@ -163,17 +164,18 @@ class _Scanner:
                 name_line = self.source.count("\n", 0, name_start) + 1
                 last_nl = self.source.rfind("\n", 0, name_start)
                 name_col = name_start - last_nl if last_nl >= 0 else name_start + 1
+                self._skip_to(">")
+                if self._peek() == ">":
+                    self._advance()
                 self.errors.append(self._LintError(
                     message=f"Unknown tag '{name}'",
                     tag=name,
                     line=name_line,
                     col=name_col,
-                    offset=name_start,
+                    offset=name_start - 1,  # include opening '<'
+                    end_offset=self.pos,
                     severity="warning",
                 ))
-                self._skip_to(">")
-                if self._peek() == ">":
-                    self._advance()
             return None
         return name
 
@@ -266,6 +268,7 @@ class _Scanner:
         col: int,
         message: str,
         severity: str,
+        end_offset: int | None = None,
     ) -> Any:
         """Build a LintError anchored at the opening tag position."""
         return self._LintError(
@@ -274,6 +277,7 @@ class _Scanner:
             line=line,
             col=col,
             offset=offset,
+            end_offset=end_offset,
             severity=severity,
         )
 

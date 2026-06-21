@@ -18,6 +18,7 @@ def _make_error(token: Token, message: str, severity: str = "error") -> LintErro
         line=token.line,
         col=token.col,
         offset=token.offset,
+        end_offset=token.end_offset,
         severity=severity,
     )
 

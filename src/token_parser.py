@@ -11,6 +11,7 @@ class LintError:
     line: int
     col: int
     offset: int
+    end_offset: int | None = None
     severity: str = "error"   # "error" | "warning" | "info"
 
 def attr_str(attrs: dict, key: str, default: str = "") -> str:
@@ -44,6 +45,7 @@ def check_block_tag(token: Token) -> list[LintError]:
         line=token.line,
         col=token.col,
         offset=token.offset,
+        end_offset=token.end_offset,
         tag=token.tag,
         message="Block tag must be self-closing: <block /> or <block id=\"name\" />",
     )]
@@ -60,6 +62,7 @@ def check_required_attrs(token: Token) -> list[LintError]:
             line=token.line,
             col=token.col,
             offset=token.offset,
+            end_offset=token.end_offset,
             tag=token.tag,
             message=f"Missing required attribute '{attr}'",
         ))
