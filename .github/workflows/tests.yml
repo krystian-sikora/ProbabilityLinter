@@ -21,7 +21,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ProbabilityIter
-          pip install attrs cattrs pygls lsprotocol sympy numpy torch
+          pip install attrs cattrs pygls lsprotocol sympy numpy scipy torch
       - name: Run tests
+        env:
+          # upstream ProbabilityIter main has no setup.py yet; expose the piter package via PYTHONPATH
+          PYTHONPATH: ${{ github.workspace }}/ProbabilityIter
         run: python -m unittest test.tests test.test_piter_interface
