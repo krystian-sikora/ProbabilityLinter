@@ -9,9 +9,9 @@ from lsprotocol.types import (
 from pygls.lsp.server import LanguageServer
 from pygls.workspace import TextDocument
 
-from src.token_parser import lint, lint_unclosed_tags
+from src.token_parser import lint
 from src.semantic_parser import lint_semantic
-from src.tokenizer import tokenize
+from src.tokenizer import scan
 
 
 class ProbLinterServer(LanguageServer):
@@ -21,11 +21,11 @@ class ProbLinterServer(LanguageServer):
 
     def make_diagnostics(self, document: TextDocument) -> None:
         diagnostics = []
-        tokens = tokenize(document.source)
+        result = scan(document.source)
 
-        all_errors = lint_unclosed_tags(document.source)
-        all_errors.extend(lint(tokens))
-        all_errors.extend(lint_semantic(tokens))
+        all_errors = list(result.errors)
+        all_errors.extend(lint(result.tokens))
+        all_errors.extend(lint_semantic(result.tokens))
 
         for error in all_errors:
             severity = {

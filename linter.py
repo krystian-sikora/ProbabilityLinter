@@ -4,9 +4,9 @@ from logging import basicConfig, debug
 from typing import List
 
 import lsp
-from src.token_parser import lint, lint_unclosed_tags, LintError
+from src.token_parser import lint, LintError
 from src.semantic_parser import lint_semantic
-from src.tokenizer import tokenize
+from src.tokenizer import scan
 
 logging.getLogger("markdown_it").setLevel(logging.WARNING)
 log_format = "%(asctime)s - %(levelname)s - %(message)s"
@@ -50,10 +50,10 @@ def lint_source(source: str, path: str = "<string>") -> list[str]:
     Lints a raw source string and returns GCC-formatted error strings.
     Useful for testing and for CLI file mode.
     """
-    tokens = tokenize(source)
-    errors = lint_unclosed_tags(source)
-    errors.extend(lint(tokens))
-    errors.extend(lint_semantic(tokens))
+    result = scan(source)
+    errors = list(result.errors)
+    errors.extend(lint(result.tokens))
+    errors.extend(lint_semantic(result.tokens))
     return to_gcc(path, errors)
 
 

@@ -137,6 +137,19 @@ class TestMissingAttributes(unittest.TestCase):
         warnings = [line for line in gcc if ": warning:" in line]
         self.assertEqual(len(warnings), 0)
 
+    def test_wrong_attribute_name_still_tokenizes(self):
+        """Wrong attr name should not silently skip the tag."""
+        source = "<constraint c='~(~d & m)' />"
+        errors = lint(tokenize(source))
+        self.assertEqual(len(errors), 1)
+        self.assertIn("Missing required attribute 'expr'", errors[0].message)
+
+    def test_token_end_offset_spans_full_tag(self):
+        source = "<prob target='d' value='0.5' />"
+        token = tokenize(source)[0]
+        self.assertEqual(source[token.offset:token.end_offset], source[token.offset:].strip())
+        self.assertTrue(source[token.offset:token.end_offset].endswith("/>"))
+
 
 class TestBlockScoping(unittest.TestCase):
     """Tests for <block /> probability block boundaries."""

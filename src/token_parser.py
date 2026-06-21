@@ -1,11 +1,7 @@
-import re
 from dataclasses import dataclass
 
-from src.tokenizer import KNOWN_TAGS, Token
+from src.tokenizer import Token
 
-_OPEN_TAG_RE = re.compile(
-    r'<(?P<tag>' + '|'.join(KNOWN_TAGS) + r')(?P<attrs>[^>]*)>',
-)
 # todo: nie można dodać zerwego lub pewnego prawdopodobieństwa - tworzy to problemy matematyczne
 
 @dataclass
@@ -31,46 +27,6 @@ REQUIRED_ATTRS: dict[str, set[str]] = {
     "prob": {"target", "value"},
     "query": {"target"},
 }
-
-
-def _position(source: str, offset: int) -> tuple[int, int]:
-    line = source[:offset].count('\n') + 1
-    col = offset - source.rfind('\n', 0, offset)
-    return line, col
-
-
-def lint_unclosed_tags(source: str) -> list[LintError]:
-    """
-    Warn on prob-linter opening tags that are neither self-closed nor paired
-    with a matching closing tag. These are ignored by the tokenizer.
-    """
-    errors: list[LintError] = []
-
-    for match in _OPEN_TAG_RE.finditer(source):
-        tag = match.group('tag')
-        attrs = match.group('attrs')
-        offset = match.start()
-        line, col = _position(source, offset)
-
-        if attrs.rstrip().endswith('/'):
-            continue
-
-        close_re = re.compile(r'</' + re.escape(tag) + r'\s*>')
-        if close_re.search(source, match.end()):
-            continue
-
-        errors.append(LintError(
-            message=(
-                f"Unclosed <{tag}> tag: use '<{tag} ... />' or add '</{tag}>'"
-            ),
-            tag=tag,
-            line=line,
-            col=col,
-            offset=offset,
-            severity="warning",
-        ))
-
-    return errors
 
 
 def lint(tokens: list[Token]) -> list[LintError]:
