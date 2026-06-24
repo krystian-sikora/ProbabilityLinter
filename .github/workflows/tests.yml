@@ -26,4 +26,4 @@ jobs:
         env:
           # upstream ProbabilityIter main has no setup.py yet; expose the piter package via PYTHONPATH
           PYTHONPATH: ${{ github.workspace }}/ProbabilityIter
-        run: python -m unittest test.tests test.test_piter_interface
+        run: python -m unittest test.tests test.test_piter_interface test.test_lsp_debounce
