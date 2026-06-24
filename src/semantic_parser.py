@@ -2,7 +2,8 @@
 Semantic parser: converts linted tokens into probability blocks,
 wires them to PiterInterface, and returns diagnostics.
 """
-from src.token_parser import LintError, attr_str
+from src.lint_error import LintError
+from src.token_parser import attr_str
 from src.tokenizer import Token
 from src.scope_manager import ProbabilityBlock, build_blocks
 from src.PiterInterface import (

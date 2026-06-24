@@ -4,7 +4,8 @@ from logging import basicConfig, debug
 from typing import List
 
 import lsp
-from src.token_parser import lint, LintError
+from src.lint_error import LintError
+from src.token_parser import lint
 from src.semantic_parser import lint_semantic
 from src.tokenizer import scan
 

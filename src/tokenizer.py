@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 
+from src.lint_error import LintError
+
 KNOWN_TAGS = {"block", "prob", "constraint", "query", "symbol"}
 
 
@@ -23,7 +25,7 @@ class ScanResult:
     """Output of a single scan pass over the source."""
 
     tokens: list[Token]
-    errors: list[Any]  # LintError instances from token_parser
+    errors: list[LintError]
 
 
 class _Scanner:
@@ -38,16 +40,13 @@ class _Scanner:
 
     def __init__(self, source: str) -> None:
         """Initialize scanner state for *source*."""
-        from src.token_parser import LintError
-
-        self._LintError = LintError
         self.source = source
         self.length = len(source)
         self.pos = 0
         self.line = 1
         self.col = 1
         self.tokens: list[Token] = []
-        self.errors: list[Any] = []
+        self.errors: list[LintError] = []
 
     def scan(self) -> ScanResult:
         """Scan the full source and return tokens plus structural errors."""
@@ -167,7 +166,7 @@ class _Scanner:
                 self._skip_to(">")
                 if self._peek() == ">":
                     self._advance()
-                self.errors.append(self._LintError(
+                self.errors.append(LintError(
                     message=f"Unknown tag '{name}'",
                     tag=name,
                     line=name_line,
@@ -185,7 +184,7 @@ class _Scanner:
         tag_start: int,
         tag_line: int,
         tag_col: int,
-    ) -> tuple[dict[str, str], list[Any]]:
+    ) -> tuple[dict[str, str], list[LintError]]:
         """
         Parse attributes until '/', '>', or end of input.
 
@@ -194,7 +193,7 @@ class _Scanner:
         continues best-effort.
         """
         attrs: dict[str, str] = {}
-        errors: list[Any] = []
+        errors: list[LintError] = []
 
         while not self._at_end():
             self._skip_whitespace()
@@ -269,9 +268,9 @@ class _Scanner:
         message: str,
         severity: str,
         end_offset: int | None = None,
-    ) -> Any:
+    ) -> LintError:
         """Build a LintError anchored at the opening tag position."""
-        return self._LintError(
+        return LintError(
             message=message,
             tag=tag,
             line=line,

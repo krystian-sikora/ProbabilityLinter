@@ -1,19 +1,7 @@
-from dataclasses import dataclass
-
+from src.lint_error import LintError
 from src.tokenizer import Token
 
 # todo: nie można dodać zerwego lub pewnego prawdopodobieństwa - tworzy to problemy matematyczne
-
-@dataclass
-class LintError:
-    message: str
-    tag: str
-    line: int
-    col: int
-    offset: int
-    end_offset: int | None = None
-    severity: str = "error"   # "error" | "warning" | "info"
-
 def attr_str(attrs: dict, key: str, default: str = "") -> str:
     """Return a stripped attribute value; safe when the key is missing or None."""
     value = attrs.get(key)

@@ -1,6 +1,7 @@
 import unittest
 
-from src.token_parser import lint, LintError
+from src.lint_error import LintError
+from src.token_parser import lint
 from src.tokenizer import tokenize
 from src.scope_manager import build_blocks
 from linter import lint_source
