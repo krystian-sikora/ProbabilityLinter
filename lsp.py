@@ -9,11 +9,8 @@ from lsprotocol.types import (
     MarkupContent, MarkupKind,
 )
 from pygls.lsp.server import LanguageServer
-from pygls.workspace import TextDocument
 
-from src.token_parser import lint
-from src.semantic_parser import lint_semantic
-from src.tokenizer import scan
+from src.pipeline import collect_errors
 
 LSP_DEBOUNCE_SECONDS = 0.5
 
@@ -40,15 +37,9 @@ def _diagnostic_range(source: str, error) -> Range:
 
 
 def compute_diagnostics(source: str) -> list[Diagnostic]:
-    """Run the full lint pipeline and return LSP diagnostics."""
-    result = scan(source)
-
-    all_errors = list(result.errors)
-    all_errors.extend(lint(result.tokens))
-    all_errors.extend(lint_semantic(result.tokens))
-
+    """Map the shared lint pipeline onto LSP Diagnostic objects."""
     diagnostics = []
-    for error in all_errors:
+    for error in collect_errors(source):
         severity = {
             "error": DiagnosticSeverity.Error,
             "warning": DiagnosticSeverity.Warning,
@@ -86,7 +77,7 @@ class ProbLinterServer(LanguageServer):
                 pass
             finally:
                 if self._debounce_tasks.get(uri) is task:
-                    self._debounce_tasks.pop(uri, None)
+                    await self._debounce_tasks.pop(uri, None)
 
         task = loop.create_task(_debounced())
         self._debounce_tasks[uri] = task
