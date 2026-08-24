@@ -106,6 +106,13 @@ class TestMissingAttributes(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("self-closing", errors[0].message)
 
+    def test_unclosed_block_header_emits_error(self):
+        source = "<block id='unclosed'>"
+        gcc = lint_source(source)
+        errors = [line for line in gcc if ": error:" in line]
+        self.assertEqual(len(errors), 1)
+        self.assertIn("self-closing", errors[0])
+
     def test_incomplete_attribute_does_not_crash(self):
         """Partial tags while typing (e.g. <prob value=/>) must not raise AttributeError."""
         source = "<prob value=/>"

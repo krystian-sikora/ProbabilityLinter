@@ -123,12 +123,20 @@ class _Scanner:
         close = f"</{tag}>"
         close_idx = self.source.find(close, self.pos)
         if close_idx == -1:
-            self.errors.append(self._error(
-                tag, start, start_line, start_col,
-                f"Unclosed <{tag}> tag: use '<{tag} ... />' or add '</{tag}>'",
-                "warning",
-                end_offset=content_start,
-            ))
+            if tag == "block":
+                self.errors.append(self._error(
+                    tag, start, start_line, start_col,
+                    'Block tag must be self-closing: <block /> or <block id="name" />',
+                    "error",
+                    end_offset=content_start,
+                ))
+            else:
+                self.errors.append(self._error(
+                    tag, start, start_line, start_col,
+                    f"Unclosed <{tag}> tag: use '<{tag} ... />' or add '</{tag}>'",
+                    "warning",
+                    end_offset=content_start,
+                ))
             return
 
         content = self.source[content_start:close_idx]
