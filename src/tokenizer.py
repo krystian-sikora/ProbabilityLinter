@@ -151,8 +151,9 @@ class _Scanner:
         """
         Read an alphabetic tag name after '<'.
 
-        Returns the name when it is in KNOWN_TAGS. Unknown names produce a
-        warning and None; a bare '<' not followed by letters also returns None.
+        Returns the name when it is in KNOWN_TAGS. Unknown names are skipped
+        silently (HTML / other markup) and yield None; a bare '<' not followed
+        by letters also returns None.
         """
         name_start = self.pos
         while self.pos < self.length and self.source[self.pos].isalpha():
@@ -160,21 +161,10 @@ class _Scanner:
         name = self.source[name_start:self.pos]
         if name not in KNOWN_TAGS:
             if name:
-                name_line = self.source.count("\n", 0, name_start) + 1
-                last_nl = self.source.rfind("\n", 0, name_start)
-                name_col = name_start - last_nl if last_nl >= 0 else name_start + 1
+                # Consume through the opening tag's '>' so scanning continues.
                 self._skip_to(">")
                 if self._peek() == ">":
                     self._advance()
-                self.errors.append(LintError(
-                    message=f"Unknown tag '{name}'",
-                    tag=name,
-                    line=name_line,
-                    col=name_col,
-                    offset=name_start - 1,  # include opening '<'
-                    end_offset=self.pos,
-                    severity="warning",
-                ))
             return None
         return name
 

@@ -2,7 +2,7 @@ import unittest
 
 from src.lint_error import LintError
 from src.token_parser import lint
-from src.tokenizer import tokenize
+from src.tokenizer import tokenize, scan
 from src.scope_manager import build_blocks
 from linter import lint_source
 
@@ -397,6 +397,20 @@ class TestSemanticLinting(unittest.TestCase):
         )
         gcc = lint_source(source)
         self.assertFalse(any("Duplicate block id" in line for line in gcc))
+
+    def test_unknown_html_tags_are_ignored(self):
+        source = (
+            "<div class='note'>Aside</div>\n"
+            "<prob target='d' value='0.5' />\n"
+            "<br/>\n"
+            "<query target='d' />"
+        )
+        result = scan(source)
+        self.assertEqual(result.errors, [])
+        self.assertEqual({t.tag for t in result.tokens}, {"prob", "query"})
+        gcc = lint_source(source)
+        self.assertFalse(any("Unknown tag" in line for line in gcc))
+        self.assertTrue(any(": info:" in line for line in gcc))
 
 
 if __name__ == "__main__":
