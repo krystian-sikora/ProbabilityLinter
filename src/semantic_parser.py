@@ -100,7 +100,14 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
     for token in block.queries:
         target = attr_str(token.attrs, "target")
         given = _given(token.attrs)
-        if not target or not pi.is_solved:
+        if not target:
+            continue
+        if not pi.is_solved:
+            errors.append(_make_error(
+                token,
+                prefix + "Query skipped: probability block was not solved",
+                severity="warning",
+            ))
             continue
         try:
             result = pi.query(target, given)

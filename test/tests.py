@@ -255,6 +255,33 @@ class TestSemanticLinting(unittest.TestCase):
         )
         # Must not crash; query alone should not produce info without a solved model.
         self.assertFalse(any(": info:" in line for line in gcc))
+        warning_lines = [line for line in gcc if ": warning:" in line]
+        self.assertTrue(
+            any("Query skipped" in line and "not solved" in line for line in warning_lines)
+        )
+
+    def test_query_without_model_emits_warning(self):
+        source = "<query target='d' />"
+        gcc = lint_source(source)
+        warning_lines = [line for line in gcc if ": warning:" in line]
+        self.assertEqual(len(warning_lines), 1)
+        self.assertIn("Query skipped: probability block was not solved", warning_lines[0])
+        self.assertFalse(any(": info:" in line for line in gcc))
+
+    def test_query_after_failed_solve_emits_warning(self):
+        source = (
+            "<prob target='d' value='0.1' />\n"
+            "<prob target='d' value='0.2' />\n"
+            "<query target='d' />"
+        )
+        gcc = lint_source(source)
+        error_lines = [line for line in gcc if ": error:" in line]
+        warning_lines = [line for line in gcc if ": warning:" in line]
+        self.assertTrue(any("contradictory" in line.lower() for line in error_lines))
+        self.assertTrue(
+            any("Query skipped" in line and "not solved" in line for line in warning_lines)
+        )
+        self.assertFalse(any(": info:" in line for line in gcc))
 
     def test_invalid_sympy_expression_emits_error(self):
         source = (
