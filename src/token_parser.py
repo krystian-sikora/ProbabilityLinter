@@ -1,7 +1,7 @@
 from src.lint_error import LintError
 from src.tokenizer import Token
 
-# todo: nie można dodać zerwego lub pewnego prawdopodobieństwa - tworzy to problemy matematyczne
+# 0 i 1 są dozwolone, ale semantic_parser ostrzega -- mogą psuć układ.
 def attr_str(attrs: dict, key: str, default: str = "") -> str:
     """Return a stripped attribute value; safe when the key is missing or None."""
     value = attrs.get(key)

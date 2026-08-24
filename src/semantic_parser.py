@@ -80,6 +80,15 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
                 prefix + f"Probability value must be a number, got {value_raw!r}",
             ))
             continue
+        if value in (0.0, 1.0):
+            errors.append(_make_error(
+                token,
+                prefix + (
+                    f"Probability value {value_raw} is 0 or 1; "
+                    "this can cause mathematical problems"
+                ),
+                severity="warning",
+            ))
         try:
             pi.add_probability(target, given, value)
         except PiterInterfaceError as e:

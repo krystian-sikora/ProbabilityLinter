@@ -283,6 +283,26 @@ class TestSemanticLinting(unittest.TestCase):
         )
         self.assertFalse(any(": info:" in line for line in gcc))
 
+    def test_probability_zero_or_one_emits_warning(self):
+        source = (
+            "<prob target='d' value='0' />\n"
+            "<query target='d' />"
+        )
+        gcc = lint_source(source)
+        warning_lines = [line for line in gcc if ": warning:" in line]
+        self.assertTrue(
+            any("0 or 1" in line and "mathematical problems" in line for line in warning_lines)
+        )
+        self.assertTrue(any(": info:" in line for line in gcc))
+
+        source_one = (
+            "<prob target='d' value='1.0' />\n"
+            "<query target='d' />"
+        )
+        gcc_one = lint_source(source_one)
+        warning_one = [line for line in gcc_one if ": warning:" in line]
+        self.assertTrue(any("0 or 1" in line for line in warning_one))
+
     def test_invalid_sympy_expression_emits_error(self):
         source = (
             "<constraint expr='d @@@ m' />\n"
