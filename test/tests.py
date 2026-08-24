@@ -252,6 +252,37 @@ class TestSemanticLinting(unittest.TestCase):
         error_lines = [line for line in gcc if ": error:" in line]
         self.assertTrue(any("parse" in line.lower() for line in error_lines))
 
+    def test_duplicate_symbol_emits_warning(self):
+        source = (
+            "<symbol name='d'>First.</symbol>\n"
+            "<symbol name='d'>Second.</symbol>\n"
+            "<prob target='d' value='0.5' />\n"
+            "<query target='d' />"
+        )
+        gcc = lint_source(source)
+        warning_lines = [line for line in gcc if ": warning:" in line]
+        self.assertEqual(len(warning_lines), 2)
+        self.assertTrue(all("Duplicate symbol 'd'" in line for line in warning_lines))
+        self.assertTrue(any(line.startswith("<string>:1:") for line in warning_lines))
+        self.assertTrue(any(line.startswith("<string>:2:") for line in warning_lines))
+        info_lines = [line for line in gcc if ": info:" in line]
+        self.assertEqual(len(info_lines), 1)
+
+    def test_same_symbol_name_in_separate_blocks_no_warning(self):
+        source = (
+            "<block id='a' />\n"
+            "<symbol name='d'>In block a.</symbol>\n"
+            "<prob target='d' value='0.3' />\n"
+            "<query target='d' />\n"
+            "<block id='b' />\n"
+            "<symbol name='d'>In block b.</symbol>\n"
+            "<prob target='d' value='0.4' />\n"
+            "<query target='d' />"
+        )
+        gcc = lint_source(source)
+        warning_lines = [line for line in gcc if ": warning:" in line]
+        self.assertEqual(warning_lines, [])
+
 
 if __name__ == "__main__":
     unittest.main()

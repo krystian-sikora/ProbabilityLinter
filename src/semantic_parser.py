@@ -41,6 +41,19 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
         for token in block.symbols
         if (name := attr_str(token.attrs, "name"))
     ]
+    name_counts: dict[str, int] = {}
+    for token in block.symbols:
+        name = attr_str(token.attrs, "name")
+        if name:
+            name_counts[name] = name_counts.get(name, 0) + 1
+    for token in block.symbols:
+        name = attr_str(token.attrs, "name")
+        if name and name_counts[name] > 1:
+            errors.append(_make_error(
+                token,
+                prefix + f"Duplicate symbol '{name}'",
+                severity="warning",
+            ))
     if symbols:
         pi.set_symbols(symbols)
 
