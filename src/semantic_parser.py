@@ -73,7 +73,15 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
         if not target or not value_raw:
             continue
         try:
-            pi.add_probability(target, given, float(value_raw))
+            value = float(value_raw)
+        except ValueError:
+            errors.append(_make_error(
+                token,
+                prefix + f"Probability value must be a number, got {value_raw!r}",
+            ))
+            continue
+        try:
+            pi.add_probability(target, given, value)
         except PiterInterfaceError as e:
             errors.append(_make_error(token, prefix + str(e)))
 

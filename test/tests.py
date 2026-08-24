@@ -243,6 +243,19 @@ class TestSemanticLinting(unittest.TestCase):
         error_lines = [line for line in gcc if ": error:" in line]
         self.assertTrue(any("1.5" in line for line in error_lines))
 
+    def test_non_numeric_probability_value_emits_error(self):
+        source = (
+            "<prob target='d' value='abc' />\n"
+            "<query target='d' />"
+        )
+        gcc = lint_source(source)
+        error_lines = [line for line in gcc if ": error:" in line]
+        self.assertTrue(
+            any("must be a number" in line and "abc" in line for line in error_lines)
+        )
+        # Must not crash; query alone should not produce info without a solved model.
+        self.assertFalse(any(": info:" in line for line in gcc))
+
     def test_invalid_sympy_expression_emits_error(self):
         source = (
             "<constraint expr='d @@@ m' />\n"
