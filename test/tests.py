@@ -343,6 +343,61 @@ class TestSemanticLinting(unittest.TestCase):
         warning_lines = [line for line in gcc if ": warning:" in line]
         self.assertEqual(warning_lines, [])
 
+    def test_duplicate_probability_emits_warning(self):
+        source = (
+            "<prob target='d' value='0.1' />\n"
+            "<prob target='d' value='0.1' />\n"
+            "<query target='d' />"
+        )
+        gcc = lint_source(source)
+        warning_lines = [line for line in gcc if ": warning:" in line]
+        self.assertEqual(len(warning_lines), 2)
+        self.assertTrue(
+            all("Duplicate probability P(d | True)" in line for line in warning_lines)
+        )
+        self.assertTrue(any(line.startswith("<string>:1:") for line in warning_lines))
+        self.assertTrue(any(line.startswith("<string>:2:") for line in warning_lines))
+        self.assertTrue(any(": info:" in line for line in gcc))
+
+    def test_duplicate_probability_different_given_no_warning(self):
+        source = (
+            "<prob target='t' given='c' value='0.8' />\n"
+            "<prob target='t' given='~c' value='0.096' />\n"
+            "<prob target='c' value='0.01' />\n"
+            "<query target='c' given='t' />"
+        )
+        gcc = lint_source(source)
+        warning_lines = [line for line in gcc if "Duplicate probability" in line]
+        self.assertEqual(warning_lines, [])
+
+    def test_duplicate_block_id_emits_warning(self):
+        source = (
+            "<block id='x' />\n"
+            "<prob target='a' value='0.5' />\n"
+            "<query target='a' />\n"
+            "<block id='x' />\n"
+            "<prob target='b' value='0.5' />\n"
+            "<query target='b' />"
+        )
+        gcc = lint_source(source)
+        warning_lines = [line for line in gcc if ": warning:" in line]
+        dup_lines = [line for line in warning_lines if "Duplicate block id 'x'" in line]
+        self.assertEqual(len(dup_lines), 2)
+        self.assertTrue(any(line.startswith("<string>:1:") for line in dup_lines))
+        self.assertTrue(any(line.startswith("<string>:4:") for line in dup_lines))
+
+    def test_anonymous_blocks_no_duplicate_id_warning(self):
+        source = (
+            "<block />\n"
+            "<prob target='a' value='0.5' />\n"
+            "<query target='a' />\n"
+            "<block />\n"
+            "<prob target='b' value='0.5' />\n"
+            "<query target='b' />"
+        )
+        gcc = lint_source(source)
+        self.assertFalse(any("Duplicate block id" in line for line in gcc))
+
 
 if __name__ == "__main__":
     unittest.main()

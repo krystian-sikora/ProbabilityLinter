@@ -66,6 +66,26 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
         except PiterInterfaceError as e:
             errors.append(_make_error(token, prefix + str(e)))
 
+    declared_probs: list[tuple[Token, str, str]] = []
+    for token in block.probabilities:
+        target = attr_str(token.attrs, "target")
+        value_raw = attr_str(token.attrs, "value")
+        if not target or not value_raw:
+            continue
+        declared_probs.append((token, target, _given(token.attrs)))
+
+    prob_key_counts: dict[tuple[str, str], int] = {}
+    for _, target, given in declared_probs:
+        key = (target, given)
+        prob_key_counts[key] = prob_key_counts.get(key, 0) + 1
+    for token, target, given in declared_probs:
+        if prob_key_counts[(target, given)] > 1:
+            errors.append(_make_error(
+                token,
+                prefix + f"Duplicate probability P({target} | {given})",
+                severity="warning",
+            ))
+
     for token in block.probabilities:
         target = attr_str(token.attrs, "target")
         value_raw = attr_str(token.attrs, "value")
@@ -131,12 +151,38 @@ def validate_block(block: ProbabilityBlock) -> list[LintError]:
     return errors
 
 
+def duplicate_block_id_warnings(tokens: list[Token]) -> list[LintError]:
+    """Warn on every <block id="..."/> that reuses an explicit id in the document."""
+    id_counts: dict[str, int] = {}
+    for token in tokens:
+        if token.tag != "block":
+            continue
+        block_id = attr_str(token.attrs, "id")
+        if not block_id:
+            continue
+        id_counts[block_id] = id_counts.get(block_id, 0) + 1
+
+    warnings: list[LintError] = []
+    for token in tokens:
+        if token.tag != "block":
+            continue
+        block_id = attr_str(token.attrs, "id")
+        if block_id and id_counts[block_id] > 1:
+            warnings.append(_make_error(
+                token,
+                f"Duplicate block id '{block_id}'",
+                severity="warning",
+            ))
+    return warnings
+
+
 def lint_semantic(tokens: list[Token]) -> list[LintError]:
     """
     Entry point used by linter.py and lsp.py.
     Builds blocks and validates each one.
     """
     errors: list[LintError] = []
+    errors.extend(duplicate_block_id_warnings(tokens))
     for block in build_blocks(tokens):
         errors.extend(validate_block(block))
     return errors
